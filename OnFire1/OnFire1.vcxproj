@@ -80,8 +80,8 @@
   </ItemGroup>
   <ItemGroup>
     <None Include="classicnoise3d.frag" />
-    <None Include="fbmnoise.frag" />
-    <None Include="fbmnoise.vert" />
+    <None Include="simplexnoise3d.frag" />
+    <None Include="noise3d.vert" />
     <None Include="flownoise2.frag" />
     <None Include="flownoise2.vert" />
     <None Include="fshader-texture.glsl" />

@@ -22,128 +22,23 @@ typedef unsigned char byte;
 
 matrix_stack stack;
 
-/////////////////////////////
-
-#define B 0x100
-#define BM 0xff
-#define N 0x1000
-#define NP 12   /* 2^N */
-#define NM 0xfff
-
-#define s_curve(t) ( t * t * (3. - 2. * t) )
-#define lerp(t, a, b) ( a + t * (b - a) )
-#define setup(i,b0,b1,r0,r1)\
-        t = vec[i] + N;\
-        b0 = ((int)t) & BM;\
-        b1 = (b0+1) & BM;\
-        r0 = t - (int)t;\
-        r1 = r0 - 1.;
-#define at2(rx,ry) ( rx * q[0] + ry * q[1] )
-#define at3(rx,ry,rz) ( rx * q[0] + ry * q[1] + rz * q[2] )
-
-
-
-static int perm[B + B + 2];
-static double g3[B + B + 2][3];
-static double g2[B + B + 2][2];
-static double grad1[B + B + 2];
-static int start = 1;
-
 GLint location_time = -1;
 GLint location_Stability = -1;
+GLint location_Roughness = -1;
+
 static char noisetypestring[200];
 vec4 squareverts[6];
 vec2 texcoords[6];
 
-void initperm(void)
-{
-   int i, j, k;
-
-   for (i = 0 ; i < B ; i++) {
-      perm[i] = i;
-      grad1[i] = (double)((rand() % (B + B)) - B) / B;
-
-     /* for (j = 0 ; j < 2 ; j++)
-         g2[i][j] = (double)((random() % (B + B)) - B) / B;
-      normalize2(g2[i]);*/
-
-      /*for (j = 0 ; j < 3 ; j++)
-         g3[i][j] = (double)((random() % (B + B)) - B) / B;
-      normalize3(g3[i]);*/
-   }
-
-   while (--i) {
-      k = perm[i];
-      perm[i] = perm[j = rand() % B];
-      perm[j] = k;
-   }
-
-   for (i = 0 ; i < B + 2 ; i++) {
-      perm[B + i] = perm[i];
-      grad1[B + i] = grad1[i];
-
-      /*for (j = 0 ; j < 2 ; j++)
-         g2[B + i][j] = g2[i][j];
-      for (j = 0 ; j < 3 ; j++)
-         g3[B + i][j] = g3[i][j];*/
-   }
-}
 
 
-double noise1(double arg)
-{
-   int bx0, bx1;
-   double rx0, rx1, sx, t, u, v, vec[1];
-
-   vec[0] = arg;
-   if (start) {
-      start = 0;
-      initperm();
-   }
-
-   setup(0,bx0,bx1,rx0,rx1);
-
-   sx = s_curve(rx0);
-   u = rx0 * grad1[ perm[ bx0 ] ];
-   v = rx1 * grad1[ perm[ bx1 ] ];
-
-   return(lerp(sx, u, v));
-}
-
-
-
-double PerlinNoise1D(double x,double alpha,double beta,int n)
-{
-   int i;
-   double val,sum = 0;
-   double p,scale = 1;
-
-   p = x;
-   for (i=0;i<n;i++) {
-      val = noise1(p);
-      sum += val / scale;
-      scale *= alpha;
-      p *= beta;
-   }
-   return(sum);
-}
-
-/////////////////////////////
-#define WIDTH 500
+#define WIDTH 700
 #define HEIGHT 400
 #define TRUE 1
 #define FALSE 0
 
 
-int right_button_down = FALSE;
-int left_button_down = FALSE;
-
-int prevMouseX;
-int prevMouseY;
-
 double view_rotx = 180.0;
-double view_roty = 0.0;
-double view_rotz = 0.0;
 double z_distance;
 
 //We need three texture files
@@ -168,6 +63,7 @@ GLuint programObj, programsimplex, programclassic;
 int multiflag = 0;
 
 float Stability;
+int Roughness;
 
 //Modified slightly from the OpenIL tutorials
 ILuint loadTexFile(const char* filename){
@@ -212,11 +108,7 @@ ILuint loadTexFile(const char* filename){
 
 void setupShader(GLuint prog,GLuint vao[1], GLuint vbo[3])
 {
-	
 	glUseProgram(prog);
-
-	
-
 
 	ILuint ilTexID[3]; /* ILuint is a 32bit unsigned integer.
     //Variable texid will be used to store image name. */
@@ -232,20 +124,6 @@ void setupShader(GLuint prog,GLuint vao[1], GLuint vbo[3])
 	glBindTexture(GL_TEXTURE_2D, texName[0]); //bind OpenGL texture name
 
 
-	/*ILubyte  firepixels;
-
-	ILubyte * firepix = ilGetData();
-
-	int size = ilGetInteger(IL_IMAGE_WIDTH) * ilGetInteger(IL_IMAGE_HEIGHT);
-
-	for ( int i = 0; i < size; i++)
-	{
-		byte bix = firepix[i];
-
-		byte newbix = (byte)PerlinNoise1D((double)bix, 1,1,5);
-
-		int r = 0;
-	}*/
 
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
@@ -304,6 +182,7 @@ void setupShader(GLuint prog,GLuint vao[1], GLuint vbo[3])
 	// Update the uniform time variable.
 	location_time = glGetUniformLocation( prog, "utime" );
 	location_Stability = glGetUniformLocation( prog, "uStability" );
+	location_Roughness = glGetUniformLocation( prog, "uRoughness" );
 }
 void init(void)
 {    
@@ -312,7 +191,7 @@ void init(void)
 
    // set Stability to 0
    Stability = 0.0;
-
+   Roughness = 0;
    
    squareverts[0] = vec4(-1, -1, 0, 1);
    texcoords[0] = vec2(0, 0);
@@ -339,12 +218,10 @@ void init(void)
 	glBindBuffer( GL_ARRAY_BUFFER, vbo[1] );
     glBufferData( GL_ARRAY_BUFFER, sizeof(texcoords), texcoords, GL_STATIC_DRAW);
 
-
-
-   //program = InitShader( "vshader-texture.glsl", "fshader-texture.glsl" );
-   // program = InitShader( "snoise3.vert", "snoise3.frag" ); // O
-   programsimplex = InitShader( "fbmnoise.vert", "fbmnoise.frag" );
-   programclassic = InitShader( "fbmnoise.vert", "classicnoise3d.frag" );
+	
+  
+   programsimplex = InitShader( "noise3d.vert", "simplexnoise3d.frag" );
+   programclassic = InitShader( "noise3d.vert", "classicnoise3d.frag" );
   
    sprintf(noisetypestring, "%s", "Classic 3D Noise"); 
    programObj = programclassic;
@@ -353,31 +230,29 @@ void init(void)
 	
 }
 
+///////////////////////////////
+// Display function
+///////////////////////////////
 void display(void)
 {
-   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
-	 glUseProgram(programObj);
+	glUseProgram(programObj);
 	 
-	 model_view = glGetUniformLocation(programObj, "model_view");
-	 projection = glGetUniformLocation(programObj, "projection");
+	model_view = glGetUniformLocation(programObj, "model_view");
+	projection = glGetUniformLocation(programObj, "projection");
 
-	  // glUniform1f() is bugged in Linux Nvidia driver 260.19.06,
-	  // so we use glUniform1fv() instead to work around the bug.
-	  /*if ( location_time != -1 ) {
-		float time = (float)glutGet(GLUT_ELAPSED_TIME);
-		glUniform1fv( location_time, 1, &time );
-	  }*/
 
+	// printing window title
     static char titlestring[200];
-	sprintf(titlestring, "GLSL Procedural Fire - %s - Stability (%.1f)", noisetypestring, Stability);
-        
+	sprintf(titlestring, "GLSL Procedural Fire - %s - Stability (%.1f) - Roughnes Level (%d)", noisetypestring, Stability, Roughness);
+	glutSetWindowTitle(titlestring);
 
-    glutSetWindowTitle(titlestring);
-
+	// set stability value
 	glUniform1fv( location_Stability, 1, &Stability );
+	glUniform1iv( location_Roughness, 1, &Roughness );
 
-    mat4 camera = mv =  LookAt(vec4(0,0,5.0+z_distance,1),vec4(0,0,0,1),vec4(0,1,0,0))* RotateX(view_rotx) * RotateY(view_roty) * RotateZ(view_rotz);
+    mat4 camera = mv =  LookAt(vec4(0,0,5.0+z_distance,1),vec4(0,0,0,1),vec4(0,1,0,0))* RotateX(view_rotx);
 
 	/////////////////////////////////////////////////////////////////////
 	mv = mv*Scale(4,4,4);
@@ -401,11 +276,7 @@ void display(void)
 	//
 	//mv = stack.pop();
 	
-	
-
-	
    glutSwapBuffers();
-
 
 }
 
@@ -429,22 +300,41 @@ void keyboard (unsigned char key, int x, int y)
 		  break;
       case GLUT_KEY_DOWN:
 		  Stability -= 0.1;
+		  glutPostRedisplay();
+		  break;
 	  case 'c':
 		  sprintf(noisetypestring, "%s", "Classic 3D Noise");
 		  programObj = programclassic;
 		  glUseProgram(programObj);
 		  setupShader(programObj, vao, vbo);
 		  break;
+	  
+
 	  case 's':
 		  sprintf(noisetypestring, "%s", "Simplex 3D Noise");
 		  programObj = programsimplex;
 		  glUseProgram(programObj);
 		  setupShader(programObj, vao, vbo);
 		  break;
+	  case '+':
+		  Roughness += 1;
+		  glutPostRedisplay();
+		  break;
+	  case '-':
+
+		  if ( Roughness > 0 )
+			Roughness -= 1;
+		  
+		  glutPostRedisplay();
+		  break;
       default:
          break;
    }
 }
+
+//////////////////////////////////////////////
+// Special key func to increase/decrease stability of the fire
+//////////////////////////////////////////////
 void specialFunc (int key, int x, int y)
 {
    switch (key) {
@@ -460,25 +350,9 @@ void specialFunc (int key, int x, int y)
          break;
    }
 }
-
-void mouse(int button, int state, int x, int y) {
-  //establish point of reference for dragging mouse in window
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-      left_button_down = TRUE;
-	  prevMouseX= x;
-      prevMouseY = y;
-    }
-
-	else if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN) {
-      right_button_down = TRUE;
-      prevMouseX = x;
-      prevMouseY = y;
-    }
-    else if (state == GLUT_UP) {
-      left_button_down = FALSE;
-	  right_button_down = FALSE;
-	}
-}
+//////////////////////////////////////
+// Idle function to change the time
+/////////////////////////////////////
 void myIdle()
 {
 	if ( location_time != -1 ) {
@@ -491,6 +365,9 @@ void myIdle()
 		}
 	  }
 }
+//////////////////////////////////////
+// Main
+/////////////////////////////////////
 int main(int argc, char** argv)
 {
    glutInit(&argc, argv);
@@ -507,9 +384,7 @@ int main(int argc, char** argv)
    glutKeyboardFunc(keyboard);
    glutSpecialFunc(specialFunc);
    glutIdleFunc(myIdle);
-   glutMouseFunc(mouse);
-   
-	
+  
    glutMainLoop();
    return 0; 
 }

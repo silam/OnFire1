@@ -21,6 +21,7 @@ in vec3 vTexCoord3D;
 in vec2 vtexCoord;
 in float ftime;
 in float vStability;
+flat in int vRoughness;
 out vec4 fColor;
 
 
@@ -120,22 +121,30 @@ float cnoise(vec3 P)
 
 void main( void )
 {
-   
 
+  // calculate the classic 3D noise based on time changing, give you different noise number
   float n = abs(cnoise(vec3(vtexCoord.st , ftime)));
   
+  // increase noise by applying stability value
   n *= vStability;
-    
- 
-  n += 0.5 * abs(cnoise(vec3(vtexCoord.st , 0) * 2 ));
-  n += 0.25  * abs(cnoise(vec3(vtexCoord.xy , 0) * 4));
-  n += 0.125 * abs(cnoise(vec3(vtexCoord.xy , 0) * 8));
-  //n += (0.125/2) * abs(cnoise(vec3(vtexCoord.xy , 0) * 16));
-  //gl_FragColor = vec4(vec3(1.5-n, 1.0-n, 0.5-n), 1.0);
+  int rlevel = vRoughness;
 
-  vec2 fLookupCoord = vtexCoord.st + 100*vec2(1 , (1 - n*0.001) )  ;//Noise.r * 0.065,-Noise.g * 0.025 );
+  if ( vRoughness >= 0 )
+  {
+      // increase fire roughness by summing the noises
+	  for ( int i = 0; i < rlevel; i++)
+	  {
+		 float factor = pow(2.0f,(i+1));
+		 float invfactor = (1.0f / factor);
+		 n   += (invfactor ) * abs(cnoise(vec3(vtexCoord.st , 0) * factor ));
+	  }
+	  
+  }
 
+  // manage not to let the fire go out of bound
+  vec2 fLookupCoord = vtexCoord.st + 100*vec2(1 , (1 - n*0.001) );
   fLookupCoord += vec2(0, 0.03);
 
-  fColor = texture2D(permTexture, fLookupCoord ) ;//
+  // look up texture by texture coordinates which is varied by noise calculation
+  fColor = texture2D(permTexture, fLookupCoord ) ;
 }

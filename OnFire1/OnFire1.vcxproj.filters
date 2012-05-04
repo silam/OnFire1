@@ -32,17 +32,17 @@
     <None Include="vshader-texture.glsl">
       <Filter>Source Files</Filter>
     </None>
-    <None Include="fbmnoise.frag" />
     <None Include="flownoise2.frag" />
     <None Include="snoise3.frag" />
     <None Include="spots.frag" />
     <None Include="tiles.frag" />
-    <None Include="fbmnoise.vert" />
     <None Include="flownoise2.vert" />
     <None Include="snoise3.vert" />
     <None Include="spots.vert" />
     <None Include="tiles.vert" />
     <None Include="classicnoise3d.frag" />
+    <None Include="simplexnoise3d.frag" />
+    <None Include="noise3d.vert" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="matrix_stack.h">
