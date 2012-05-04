@@ -20,6 +20,11 @@
 
 typedef unsigned char byte;
 
+#define WIDTH 1000
+#define HEIGHT 400
+#define TRUE 1
+#define FALSE 0
+
 matrix_stack stack;
 
 GLint location_time = -1;
@@ -30,12 +35,9 @@ static char noisetypestring[200];
 vec4 squareverts[6];
 vec2 texcoords[6];
 
+float time;
 
 
-#define WIDTH 700
-#define HEIGHT 400
-#define TRUE 1
-#define FALSE 0
 
 
 double view_rotx = 180.0;
@@ -237,29 +239,38 @@ void display(void)
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   
-	glUseProgram(programObj);
-	 
-	model_view = glGetUniformLocation(programObj, "model_view");
-	projection = glGetUniformLocation(programObj, "projection");
-
-
 	// printing window title
     static char titlestring[200];
-	sprintf(titlestring, "GLSL Procedural Fire - %s - Stability (%.1f) - Roughnes Level (%d)", noisetypestring, Stability, Roughness);
+	sprintf(titlestring, "GLSL Procedural Fire - Classic vs Simplex 3D Noise - Stability (%.1f) - Roughnes Level (%d)", Stability, Roughness);
 	glutSetWindowTitle(titlestring);
+
+	mat4 camera = mv =  LookAt(vec4(0,0,5.0+z_distance,1),vec4(0,0,0,1),vec4(0,1,0,0))* RotateX(view_rotx);
+		
+	mv = mv*Scale(4,4,4);
+
+
+	/////////////////////////////////////////////////////////////////
+	// Rendering texture with Classic noise
+	/////////////////////////////////////////////////////////////////
+	glUseProgram(programclassic);
+	 
+	model_view = glGetUniformLocation(programclassic, "model_view");
+	projection = glGetUniformLocation(programclassic, "projection");
+	location_time = glGetUniformLocation( programclassic, "utime" );
+	location_Stability = glGetUniformLocation( programclassic, "uStability" );
+	location_Roughness = glGetUniformLocation( programclassic, "uRoughness" );
+
+	
 
 	// set stability value
 	glUniform1fv( location_Stability, 1, &Stability );
 	glUniform1iv( location_Roughness, 1, &Roughness );
+	glUniform1fv( location_time, 1, &time );
 
-    mat4 camera = mv =  LookAt(vec4(0,0,5.0+z_distance,1),vec4(0,0,0,1),vec4(0,1,0,0))* RotateX(view_rotx);
-
-	/////////////////////////////////////////////////////////////////////
-	mv = mv*Scale(4,4,4);
-
+    
 	stack.push(mv);
 
-	glUniformMatrix4fv(model_view, 1, GL_TRUE, mv*Translate(0,0,0));
+	glUniformMatrix4fv(model_view, 1, GL_TRUE, mv*Translate(-0.4,0,0));
 	glUniformMatrix4fv(projection, 1, GL_TRUE, p);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texName[0]); //which texture do we want?
@@ -268,15 +279,34 @@ void display(void)
 	mv = stack.pop();
 
 	/////////////////////////////////////////////////////////////////
-	//stack.push(mv);
-	//glUniformMatrix4fv(model_view, 1, GL_TRUE, mv*Translate(1.1,0,0));
-	//glActiveTexture(GL_TEXTURE1);
-	//glBindTexture(GL_TEXTURE_2D, texName[1]); //which texture do we want?
-	//glDrawArrays( GL_TRIANGLES, 0, 6 );
-	//
-	//mv = stack.pop();
-	
-   glutSwapBuffers();
+	// Rendering texture with simplex noise
+	/////////////////////////////////////////////////////////////////
+	stack.push(mv);
+
+	glUseProgram(programsimplex);
+	 
+	model_view = glGetUniformLocation(programsimplex, "model_view");
+	projection = glGetUniformLocation(programsimplex, "projection");
+	location_time = glGetUniformLocation( programsimplex, "utime" );
+	location_Stability = glGetUniformLocation( programsimplex, "uStability" );
+	location_Roughness = glGetUniformLocation( programsimplex, "uRoughness" );
+
+	glUniform1fv( location_time, 1, &time );
+	glUniformMatrix4fv(model_view, 1, GL_TRUE, mv*Translate(1.1,0,0));
+	glUniformMatrix4fv(projection, 1, GL_TRUE, p);
+	// set stability value
+	glUniform1fv( location_Stability, 1, &Stability );
+	glUniform1iv( location_Roughness, 1, &Roughness );
+
+
+
+	glActiveTexture(GL_TEXTURE0);
+	glBindTexture(GL_TEXTURE_2D, texName[0]); //which texture do we want?
+	glDrawArrays( GL_TRIANGLES, 0, 6 );
+	mv = stack.pop();
+	/////////////////////////////////////////////////////////////////
+
+    glutSwapBuffers();
 
 }
 
@@ -356,11 +386,15 @@ void specialFunc (int key, int x, int y)
 void myIdle()
 {
 	if ( location_time != -1 ) {
-		float time = (float)glutGet(GLUT_ELAPSED_TIME);
+		time = (float)glutGet(GLUT_ELAPSED_TIME);
 
 		if ( ((int)time % 100) == 0 )
 		{
-			glUniform1fv( location_time, 1, &time );
+
+			//glUseProgram(programObj);
+			//location_time = glGetUniformLocation( programObj, "utime" );
+
+			//glUniform1fv( location_time, 1, &time );
 			glutPostRedisplay();
 		}
 	  }
