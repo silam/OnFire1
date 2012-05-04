@@ -7,11 +7,15 @@
 //               Distributed under the MIT License. See LICENSE file.
 //
 
-#version 120
+#version 150
 
-varying vec3 vTexCoord3D;
+uniform sampler2D permTexture;
+
+in vec3 vTexCoord3D;
 in vec2 vtexCoord;
-
+in float ftime;
+in float vStability;
+out vec4 fColor;
 
 vec4 permute(vec4 x)
 {
@@ -97,17 +101,21 @@ float snoise(vec3 v)
 
 void main( void )
 {
-  //float n = abs(snoise(vTexCoord3D));
-  //n += 0.5 * abs(snoise(vTexCoord3D * 2.0));
-  //n += 0.25 * abs(snoise(vTexCoord3D * 4.0));
-  //n += 0.125 * abs(snoise(vTexCoord3D * 8.0));
-  
+   
 
-  float n = abs(snoise(vec3(vtexCoord.xy , 0)));
-  n += 0.5   * abs(snoise(vec3(vtexCoord.xy , 0) * 2 ));
-  n += 0.25  * abs(snoise(vec3(vtexCoord.xy , 0) * 4));
-  n += 0.125 * abs(snoise(vec3(vtexCoord.xy , 0) * 8));
-  
+  float n = abs(snoise(vec3(vtexCoord.st , ftime)));
+  n *= vStability;
+   
+ 
+  n += 0.5 * abs(snoise(vec3(vtexCoord.st , 0) * 2 ));
+  n += 0.25  * abs(snoise(vec3(vtexCoord.st , 0) * 4));
+  n += 0.125 * abs(snoise(vec3(vtexCoord.st , 0) * 8));
+  //n += (0.125/2) * abs(snoise(vec3(vtexCoord.st , 0) * 16));
+  //gl_FragColor = vec4(vec3(1.5-n, 1.0-n, 0.5-n), 1.0);
 
-  gl_FragColor = vec4(vec3(1.5-n, 1.0-n, 0.5-n), 1.0);
+  vec2 fLookupCoord = vtexCoord.st + 100*vec2(1 , (1 - n*0.001) )  ;//Noise.r * 0.065,-Noise.g * 0.025 );
+
+  fLookupCoord += vec2(0, 0.03);
+
+  fColor = texture2D(permTexture, fLookupCoord ) ;//
 }

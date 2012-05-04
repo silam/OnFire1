@@ -9,8 +9,11 @@ in vec4 vPosition;
 in vec2 texCoord;
 out vec3 position;
 //you'll need to pass the texture coordinates over to the fragment shader, so you'll need an out
+
 in float vtime;
 out float ftime;
+uniform float  uStability;
+out float vStability;
 
 uniform float utime;
 uniform mat4 model_view;
@@ -30,7 +33,9 @@ void main(void) {
 
 	ftime = vtime;
 	// position = veyepos.xyz  * 4 + vec3(0.0, 0.0, vtime);
-	vtexCoord = texCoord * 4 + vec2(0.0, utime / 1200 );
+	vtexCoord = texCoord;// + vec2(0.0, utime );
+	ftime = utime;
+	vStability = uStability;
 	gl_Position = projection * veyepos;
 
 	
