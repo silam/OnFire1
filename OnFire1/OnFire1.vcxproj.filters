@@ -18,7 +18,10 @@
     <ClCompile Include="InitShader.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="loadImage.cpp">
+    <ClCompile Include="onFire.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="matrix_stack.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -39,5 +42,11 @@
     <None Include="snoise3.vert" />
     <None Include="spots.vert" />
     <None Include="tiles.vert" />
+    <None Include="classicnoise3d.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="matrix_stack.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -75,9 +75,11 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="InitShader.cpp" />
-    <ClCompile Include="loadImage.cpp" />
+    <ClCompile Include="matrix_stack.cpp" />
+    <ClCompile Include="onFire.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="classicnoise3d.frag" />
     <None Include="fbmnoise.frag" />
     <None Include="fbmnoise.vert" />
     <None Include="flownoise2.frag" />
@@ -90,6 +92,9 @@
     <None Include="tiles.frag" />
     <None Include="tiles.vert" />
     <None Include="vshader-texture.glsl" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="matrix_stack.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
